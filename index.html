@@ -1,27 +1,1956 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-<title>AgroSat Monitor</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroSat Monitor - Sensoriamento Orbital Inteligente</title>
+    
+    <!-- Fontes Modernas (Rajdhani para títulos futuristas e Inter para leitura) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CDN do Chart.js para os gráficos do Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Estilos Customizados (Visual SpaceX / NASA / Azure) -->
+    <style>
+        :root {
+            --bg-color: #030712;
+            --panel-bg: rgba(10, 15, 30, 0.7);
+            --panel-border: rgba(0, 240, 255, 0.15);
+            --panel-border-hover: rgba(0, 240, 255, 0.4);
+            --text-primary: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            /* Cores de Destaque */
+            --color-azure: #0078d4;
+            --color-cyber: #00f0ff;
+            --color-chlorophyll: #10b981;
+            --color-warning: #f59e0b;
+            --color-orbit: #6366f1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, .font-tech {
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Fundo Espacial Interativo (Canvas) */
+        #space-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Efeito de Vidro Futurista (Glassmorphism) */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-panel:hover {
+            border-color: var(--panel-border-hover);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+        }
+
+        /* Layout Centralizado / Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* HEADER & NAVEGAÇÃO */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(3, 7, 18, 0.8);
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--color-cyber);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--color-cyber);
+        }
+
+        .btn-telemetry {
+            background: transparent;
+            border: 1px solid var(--color-cyber);
+            color: var(--color-cyber);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-telemetry:hover {
+            background: var(--color-cyber);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--color-cyber);
+        }
+
+        /* MENU MOBILE */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-top: 100px;
+            padding-bottom: 50px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 120, 212, 0.15);
+            border: 1px solid rgba(0, 120, 212, 0.4);
+            color: #7dd3fc;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .hero-badge .pulse {
+            width: 8px;
+            height: 8px;
+            background: var(--color-cyber);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--color-cyber);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 40%, var(--color-cyber) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 32px;
+            max-width: 540px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn-primary {
+            background: var(--color-azure);
+            border: 1px solid var(--color-azure);
+            color: #fff;
+            padding: 14px 28px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: #0086f0;
+            box-shadow: 0 0 20px rgba(0, 120, 212, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 14px 28px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Satélite Interativo no Hero */
+        .hero-satellite {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .orbit-container {
+            width: 320px;
+            height: 320px;
+            border: 1px dashed rgba(0, 240, 255, 0.2);
+            border-radius: 50%;
+            position: relative;
+            animation: spin 30s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .satellite-node {
+            position: absolute;
+            top: -15px;
+            left: calc(50% - 15px);
+            width: 30px;
+            height: 30px;
+            background: var(--bg-color);
+            border: 2px solid var(--color-cyber);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--color-cyber);
+        }
+
+        .satellite-node svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--color-cyber);
+        }
+
+        .planet-center {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #0078d4, #011627 80%);
+            box-shadow: 0 0 40px rgba(0, 120, 212, 0.6), inset -20px -20px 50px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+
+        /* Grid lines da projeção do planeta */
+        .planet-center::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(0, 240, 255, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.15) 1px, transparent 1px);
+            background-size: 20px 20px;
+            animation: scanlines 10s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100px; }
+        }
+
+        /* SEÇÕES GERAIS */
+        section {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-tag {
+            color: var(--color-cyber);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* METRICS CARDS SECTION */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .metric-card {
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .metric-card:hover .metric-icon {
+            transform: scale(1.1);
+        }
+
+        .metric-title {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .metric-value-container {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+        }
+
+        .metric-unit {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .metric-trend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .trend-up { color: var(--color-chlorophyll); }
+        .trend-down { color: #f87171; }
+        .trend-stable { color: var(--color-warning); }
+
+        .metric-telemetry-line {
+            height: 2px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-telemetry-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--color-cyber), transparent);
+            animation: scanning 2s infinite linear;
+        }
+
+        @keyframes scanning {
+            0% { left: -50%; }
+            100% { left: 100%; }
+        }
+
+        /* DASHBOARD PREVIEW */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            align-items: stretch;
+        }
+
+        .db-panel {
+            padding: 30px;
+        }
+
+        .db-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
+        }
+
+        .db-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--color-chlorophyll);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--color-chlorophyll);
+        }
+
+        .db-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .db-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .db-btn.active, .db-btn:hover {
+            border-color: var(--color-cyber);
+            color: var(--color-cyber);
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        .db-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .feed-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .feed-item:last-child {
+            border-bottom: none;
+        }
+
+        .feed-time {
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--color-cyber);
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .feed-text h4 {
+            font-size: 0.95rem;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .feed-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* FLUXO DE PROCESSAMENTO (DATA FLOW) */
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            position: relative;
+            margin-top: 40px;
+        }
+
+        .flow-step {
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .flow-num {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 120, 212, 0.1);
+            border: 1px solid var(--color-azure);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            color: var(--color-cyber);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .flow-step h3 {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .flow-step p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Linha conectora do fluxo */
+        .flow-line {
+            position: absolute;
+            top: 50px;
+            left: 10%;
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--color-cyber) 0%, var(--color-azure) 50%, var(--color-chlorophyll) 100%);
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        /* CONEXÃO INDÚSTRIA ESPACIAL */
+        .space-industry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .space-badge {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fcd34d;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+
+        .space-industry-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .space-industry-text p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .space-feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .space-feature {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .space-feature-icon {
+            color: var(--color-cyber);
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .space-feature h4 {
+            color: #fff;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .space-feature p {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+
+        .space-spec {
+            padding: 40px;
+            position: relative;
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 0;
+        }
+
+        .spec-item:last-child {
+            border-bottom: none;
+        }
+
+        .spec-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .spec-val {
+            color: var(--color-cyber);
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+
+        /* SEÇÃO ODS 2 (FOME ZERO E AGRICULTURA SUSTENTÁVEL) */
+        .ods-section {
+            background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+        }
+
+        .ods-grid {
+            display: grid;
+            grid-template-columns: 0.8fr 1.2fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .ods-badge-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .ods-symbol {
+            width: 220px;
+            height: 220px;
+            background: #10b981;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+            border: 4px solid #fff;
+        }
+
+        .ods-num {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .ods-title-box {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        .ods-text h2 {
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 24px;
+        }
+
+        .ods-text p {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+        }
+
+        /* CARROSSEL DA EQUIPE (CORRIGIDO PARA PADRONIZAÇÃO DE TAMANHO E ALTURA) */
+        .carousel-wrapper {
+            position: relative;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 50px;
+        }
+
+        .carousel-container {
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: auto; /* Controlado via JS de forma personalizada */
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            padding: 15px 0;
+            /* Ocultar barra de rolagem padrão */
+            -ms-overflow-style: none;  /* IE e Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .carousel-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari e Opera */
+        }
+
+        .team-slide {
+            min-width: calc(33.333% - 13.33px);
+            flex-shrink: 0;
+            box-sizing: border-box;
+            scroll-snap-align: start;
+            display: flex; /* Força comportamento flexbox para esticar as crianças verticalmente */
+            flex-direction: column; /* Direcionamento de fluxo vertical */
+        }
+
+        .team-card {
+            padding: 30px;
+            text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            flex-grow: 1; /* Garante que todos os cartões cresçam idênticos à maior altura disponível */
+            width: 100%; /* Padronização horizontal total */
+        }
+
+        .team-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 20px auto;
+            border: 2px solid var(--color-cyber);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+            object-fit: cover;
+            background: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--color-cyber);
+        }
+
+        .team-card h3 {
+            font-size: 1.3rem;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .team-role {
+            color: var(--color-cyber);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+
+        .team-bio {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+
+        /* Botões de Controle do Carrossel */
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(3, 7, 18, 0.85);
+            border: 1px solid var(--color-cyber);
+            color: var(--color-cyber);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+
+        .carousel-btn:hover {
+            background: var(--color-cyber);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px var(--color-cyber);
+        }
+
+        .carousel-btn.prev {
+            left: 0;
+        }
+
+        .carousel-btn.next {
+            right: 0;
+        }
+
+        .carousel-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* CONTATO / NEWSLETTER */
+        .newsletter-panel {
+            padding: 60px;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .newsletter-panel h2 {
+            font-size: 2.2rem;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        .newsletter-panel p {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 10px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .newsletter-input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 4px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .newsletter-input:focus {
+            border-color: var(--color-cyber);
+        }
+
+        .notification-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #10b981;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 4px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: #020617;
+            padding: 60px 0 30px 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.5fr repeat(3, 1fr);
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-desc p {
+            margin-top: 15px;
+            margin-bottom: 20px;
+            max-width: 280px;
+        }
+
+        .footer-links h4 {
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--color-cyber);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-bottom-mock {
+            font-size: 0.85rem;
+            color: var(--color-warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: rgba(245, 158, 11, 0.05);
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        /* RESPONSIVIDADE */
+        @media (max-width: 992px) {
+            .hero-grid, .dashboard-container, .space-industry-grid, .ods-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                text-align: center;
+                padding-top: 140px;
+            }
+
+            .hero-badge, .hero p {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-satellite {
+                margin-top: 50px;
+            }
+
+            .flow-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .flow-line {
+                display: none;
+            }
+
+            .team-slide {
+                min-width: calc(50% - 10px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block;
+            }
+
+            .nav-menu {
+                position: fixed;
+                top: 70px;
+                left: -100%;
+                width: 100%;
+                height: calc(100vh - 70px);
+                background: #030712;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                transition: 0.3s ease-in-out;
+                z-index: 99;
+            }
+
+            .nav-menu.active {
+                left: 0;
+            }
+
+            .btn-telemetry {
+                display: none; /* Simplificado no mobile */
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .flow-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .carousel-wrapper {
+                padding: 0 30px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .team-slide {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+            .newsletter-form {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<h1>AgroSat Monitor</h1>
+    <!-- Fundo de Estrelas e Conexões Dinâmicas -->
+    <canvas id="space-canvas"></canvas>
 
-<p>
-Monitoramento agrícola por satélites.
-</p>
+    <!-- HEADER / NAVEGAÇÃO -->
+    <header>
+        <div class="container nav-container">
+            <a href="#" class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-cyber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
+                AgroSat<span>Monitor</span>
+            </a>
+            
+            <button class="mobile-toggle" id="menu-toggle" aria-label="Abrir Menu">☰</button>
 
-<h2>ODS</h2>
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="#inicio" class="nav-link active">Início</a></li>
+                <li><a href="#metricas" class="nav-link">Métricas</a></li>
+                <li><a href="#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="#tecnologia" class="nav-link">Espaço</a></li>
+                <li><a href="#ods2" class="nav-link">ODS 2</a></li>
+                <li><a href="#equipe" class="nav-link">Equipe</a></li>
+            </ul>
 
-ODS 2 - Fome Zero
+            <button class="btn-telemetry" onclick="window.location.href='#dashboard'">Ver Telemetria</button>
+        </div>
+    </header>
 
-<h2>Equipe</h2>
+    <!-- HERO SECTION -->
+    <section id="inicio" class="hero">
+        <div class="container hero-grid">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="pulse"></span>
+                    Constelação Sentinel-2 Online
+                </div>
+                <h1>Monitoramento de Safras Baseado em Dados Orbitais</h1>
+                <p>Potencialize a sua lavoura com análises multiespectrais de última geração. Conectamos tecnologia espacial de satélite ao ecossistema Microsoft Azure para entregar inteligência acionável no campo.</p>
+                
+                <div class="hero-actions">
+                    <a href="#dashboard" class="btn-primary">
+                        Acessar Console
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
+                    <a href="#tecnologia" class="btn-secondary">Arquitetura Orbital</a>
+                </div>
+            </div>
+            
+            <div class="hero-satellite">
+                <div class="orbit-container">
+                    <div class="satellite-node">
+                        <!-- Ícone do Satélite -->
+                        <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>
+                    </div>
+                </div>
+                <div class="planet-center"></div>
+            </div>
+        </div>
+    </section>
 
-Felipe Hideki RM98323
-Guilherme Milheiro RM550295
-Jhonatan Curci RM94188
-Enzo Vasconcelos RM550702
-Ricardo Queiroz RM94241
+    <!-- METRICS CARDS SECTION -->
+    <section id="metricas">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Telemetria Biofísica</span>
+                <h2 class="section-title">Parâmetros Críticos do Solo e Planta</h2>
+            </div>
 
+            <div class="metrics-grid">
+                <!-- CARD NDVI -->
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon" style="color: var(--color-chlorophyll);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    </div>
+                    <div class="metric-title">Índice Vegetativo (NDVI)</div>
+                    <div class="metric-value-container">
+                        <div class="metric-value" id="val-ndvi">0.78</div>
+                        <div class="metric-unit">Índice</div>
+                    </div>
+                    <div class="metric-trend trend-up">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                        <span>+2.4% (Semanal)</span>
+                    </div>
+                    <div class="metric-telemetry-line"></div>
+                </div>
+
+                <!-- CARD UMIDADE -->
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon" style="color: var(--color-azure);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z"></path></svg>
+                    </div>
+                    <div class="metric-title">Umidade do Solo (NDWI)</div>
+                    <div class="metric-value-container">
+                        <div class="metric-value" id="val-moisture">42.1</div>
+                        <div class="metric-unit">%</div>
+                    </div>
+                    <div class="metric-trend trend-down">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+                        <span>-1.1% (Diário)</span>
+                    </div>
+                    <div class="metric-telemetry-line"></div>
+                </div>
+
+                <!-- CARD TEMPERATURA -->
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon" style="color: var(--color-warning);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
+                    </div>
+                    <div class="metric-title">Temperatura de Superfície</div>
+                    <div class="metric-value-container">
+                        <div class="metric-value" id="val-temp">24.8</div>
+                        <div class="metric-unit">°C</div>
+                    </div>
+                    <div class="metric-trend trend-stable">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Estável (Médio)</span>
+                    </div>
+                    <div class="metric-telemetry-line"></div>
+                </div>
+
+                <!-- CARD COBERTURA VEGETAL -->
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon" style="color: #a855f7;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 17 22 12"></polyline></svg>
+                    </div>
+                    <div class="metric-title">Frações de Cobertura Vegetal (FCover)</div>
+                    <div class="metric-value-container">
+                        <div class="metric-value" id="val-fcover">89.4</div>
+                        <div class="metric-unit">%</div>
+                    </div>
+                    <div class="metric-trend trend-up">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                        <span>+0.5% (Semanal)</span>
+                    </div>
+                    <div class="metric-telemetry-line"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DASHBOARD PREVIEW -->
+    <section id="dashboard">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Análise Espacial Integrada</span>
+                <h2 class="section-title">Console de Telemetria</h2>
+            </div>
+
+            <div class="dashboard-container">
+                <!-- Painel Gráfico -->
+                <div class="glass-panel db-panel">
+                    <div class="db-header">
+                        <div class="db-title">
+                            <span class="status-dot"></span>
+                            <h3 class="font-tech">Análise Temporal de NDVI vs Umidade</h3>
+                        </div>
+                        <div class="db-controls">
+                            <button class="db-btn active" onclick="updateDataset('talhao-alfa')">Talhão Alfa</button>
+                            <button class="db-btn" onclick="updateDataset('talhao-beta')">Talhão Beta</button>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-wrapper">
+                        <canvas id="ndviMoistureChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Feed Satélite Lateral -->
+                <div class="db-sidebar">
+                    <div class="glass-panel db-panel" style="flex: 1;">
+                        <h3 class="font-tech" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 10px;">Status da Constelação</h3>
+                        
+                        <div class="feed-item">
+                            <div class="feed-time">16:40:12</div>
+                            <div class="feed-text">
+                                <h4>Passagem de Satélite</h4>
+                                <p>Sentinel-2A concluiu órbita heliosíncrona sobre o Talhão Alfa.</p>
+                            </div>
+                        </div>
+
+                        <div class="feed-item">
+                            <div class="feed-time">15:12:00</div>
+                            <div class="feed-text">
+                                <h4>Azure Cloud Sync</h4>
+                                <p>Cálculo de índice NDVI processado via Azure Machine Learning.</p>
+                            </div>
+                        </div>
+
+                        <div class="feed-item">
+                            <div class="feed-time">11:04:45</div>
+                            <div class="feed-text">
+                                <h4>Alerta Bioclimático</h4>
+                                <p>Estresse hídrico leve detectado no setor norte (Talhão Beta).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FLUXO DE INFRAESTRUTURA (SATÉLITE -> PRODUTOR) -->
+    <section id="fluxo">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Infraestrutura</span>
+                <h2 class="section-title">Fluxo Orbital de Dados</h2>
+            </div>
+
+            <div class="flow-grid-container" style="position: relative;">
+                <div class="flow-line"></div>
+                <div class="flow-grid">
+                    <!-- Passo 1 -->
+                    <div class="glass-panel flow-step">
+                        <div class="flow-num">01</div>
+                        <h3>Constelação Satélite</h3>
+                        <p>Satélites de órbita baixa capturam varreduras multiespectrais em bandas visíveis e infravermelhas próximas.</p>
+                    </div>
+                    <!-- Passo 2 -->
+                    <div class="glass-panel flow-step">
+                        <div class="flow-num">02</div>
+                        <h3>Azure Cloud Gateway</h3>
+                        <p>Os dados brutos de telemetria orbital são capturados globalmente pelas estações terrestres e carregados na nuvem Azure.</p>
+                    </div>
+                    <!-- Passo 3 -->
+                    <div class="glass-panel flow-step">
+                        <div class="flow-num">03</div>
+                        <h3>Processamento de IA</h3>
+                        <p>Algoritmos computacionais de inteligência artificial limpam interferências atmosféricas e compilam os índices espectrais.</p>
+                    </div>
+                    <!-- Passo 4 -->
+                    <div class="glass-panel flow-step">
+                        <div class="flow-num">04</div>
+                        <h3>Insights para o Produtor</h3>
+                        <p>O produtor recebe relatórios e alertas geoespaciais em tempo recorde para subsidiar tomadas de decisão.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TECNOLOGIA E CONEXÃO INDÚSTRIA ESPACIAL -->
+    <section id="tecnologia">
+        <div class="container space-industry-grid">
+            <div class="space-industry-text">
+                <span class="space-badge">Herança Tecnológica Aeroespacial</span>
+                <h2>Conexão com a Nova Era Espacial</h2>
+                <p>Nossa plataforma adota o padrão de processamento de agências de exploração como NASA e SpaceX. Combinamos ciência de foguetes com geoprocessamento em tempo real para otimizar os recursos do nosso planeta.</p>
+                
+                <div class="space-feature-list">
+                    <div class="space-feature">
+                        <div class="space-feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                        </div>
+                        <div>
+                            <h4>Sistemas Distribuídos Robustos</h4>
+                            <p>Infraestrutura idêntica às ferramentas de telemetria em tempo real usadas no controle de voo espacial.</p>
+                        </div>
+                    </div>
+                    <div class="space-feature">
+                        <div class="space-feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                        </div>
+                        <div>
+                            <h4>Acurácia Científica</h4>
+                            <p>Calibração radiométrica de última geração para máxima fidedignidade dos dados agrícolas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel space-spec">
+                <h3 class="font-tech" style="margin-bottom: 24px;">Especificações do Sistema</h3>
+                <div class="spec-item">
+                    <span class="spec-label">Resolução Espacial</span>
+                    <span class="spec-val">10 Metros / Pixel</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Tempo de Rebatida</span>
+                    <span class="spec-val">Cada 5 Dias</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">SLA de Processamento</span>
+                    <span class="spec-val">&lt; 3 Horas após Captura</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Servidor Cloud</span>
+                    <span class="spec-val">Microsoft Azure US East</span>
+                </div>
+                <div class="spec-item">
+                    <span class="spec-label">Bandas Espectrais</span>
+                    <span class="spec-val">13 Bandas (B2, B3, B4, B8, B11)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEÇÃO ODS 2 (FOME ZERO E AGRICULTURA SUSTENTÁVEL) -->
+    <section id="ods2" class="ods-section">
+        <div class="container ods-grid">
+            <div class="ods-badge-container">
+                <div class="ods-symbol">
+                    <div class="ods-num">2</div>
+                    <div class="ods-title-box">Fome Zero e Agric. Sustentável</div>
+                </div>
+            </div>
+
+            <div class="ods-text">
+                <span class="section-tag">Objetivos de Desenvolvimento Sustentável</span>
+                <h2>Impacto Direto na ODS 2 da ONU</h2>
+                <p>O monitoramento de alta precisão reduz o desperdício de insumos hídricos e pesticidas, melhorando drasticamente o rendimento das safras sem expandir a área de desmatamento terrestre.</p>
+                <p>Nossa inteligência promove uma agricultura eficiente e resiliente às mudanças climáticas mundiais. Promover a segurança alimentar global através de dados confiáveis é a nossa maior missão.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- EQUIPE DE DESENVOLVIMENTO (CARROSSEL INTERATIVO - COM CSS SCROLL SNAP) -->
+    <section id="equipe">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Os Cérebros por trás do AgroSat</span>
+                <h2 class="section-title">Equipe Técnica</h2>
+            </div>
+
+            <div class="carousel-wrapper">
+                <!-- Botões do carrossel -->
+                <button class="carousel-btn prev" id="carousel-btn-prev" aria-label="Anterior">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button class="carousel-btn next" id="carousel-btn-next" aria-label="Próximo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+
+                <!-- Área visível do carrossel (Scroll container) -->
+                <div class="carousel-container" id="carousel-container">
+                    
+                    <!-- Membro 1 -->
+                    <div class="team-slide">
+                        <div class="glass-panel team-card">
+                            <div class="team-avatar">🛰️</div>
+                            <h3>Felipe Hideki</h3>
+                            <div class="team-role">Cientista de Dados Orbitais</div>
+                            <div class="team-bio" style="font-weight: 600; color: var(--color-cyber); margin-bottom: 12px;">RM 98323</div>
+                            <p class="team-bio">Especialista em análise de imagens multiespectrais e modelagem de índices biofísicos de sensoriamento remoto de alta frequência.</p>
+                        </div>
+                    </div>
+
+                    <!-- Membro 2 -->
+                    <div class="team-slide">
+                        <div class="glass-panel team-card">
+                            <div class="team-avatar">☁️</div>
+                            <h3>Guilherme Milheiro</h3>
+                            <div class="team-role">Arquiteto de Nuvem Azure</div>
+                            <div class="team-bio" style="font-weight: 600; color: var(--color-cyber); margin-bottom: 12px;">RM 550295</div>
+                            <p class="team-bio">Responsável pela infraestrutura escalável de pipelines de Big Data, otimizando o fluxo de processamento de dados na Azure.</p>
+                        </div>
+                    </div>
+
+                    <!-- Membro 3 -->
+                    <div class="team-slide">
+                        <div class="glass-panel team-card">
+                            <div class="team-avatar">📡</div>
+                            <h3>Jhonatan Curci</h3>
+                            <div class="team-role">Engenheiro de Telemetria</div>
+                            <div class="team-bio" style="font-weight: 600; color: var(--color-cyber); margin-bottom: 12px;">RM 94188</div>
+                            <p class="team-bio">Especialista em integração de redes e recepção de pacotes brutos das constelações de satélites em estações terrestres.</p>
+                        </div>
+                    </div>
+
+                    <!-- Membro 4 -->
+                    <div class="team-slide">
+                        <div class="glass-panel team-card">
+                            <div class="team-avatar">💻</div>
+                            <h3>Enzo Vasconcelos</h3>
+                            <div class="team-role">Desenvolvedor GIS Full-Stack</div>
+                            <div class="team-bio" style="font-weight: 600; color: var(--color-cyber); margin-bottom: 12px;">RM 550702</div>
+                            <p class="team-bio">Responsável pelas interfaces ricas em dados geoespaciais e pela renderização dinâmica de painéis de controle em tempo real.</p>
+                        </div>
+                    </div>
+
+                    <!-- Membro 5 -->
+                    <div class="team-slide">
+                        <div class="glass-panel team-card">
+                            <div class="team-avatar">🌾</div>
+                            <h3>Ricardo Queiroz</h3>
+                            <div class="team-role">Engenheiro de Agricultura de Precisão</div>
+                            <div class="team-bio" style="font-weight: 600; color: var(--color-cyber); margin-bottom: 12px;">RM 94241</div>
+                            <p class="team-bio">Especialista agronômico encarregado de correlacionar os índices multiespectrais orbitais às tomadas de decisão de campo.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEWSLETTER / CONTATO -->
+    <section id="contato">
+        <div class="container">
+            <div class="glass-panel newsletter-panel">
+                <h2>Inscreva-se na nossa Newsletter de Telemetria</h2>
+                <p>Receba resumos semanais sobre tecnologia espacial, sensoriamento remoto e o estado atual das lavouras globais diretamente no seu e-mail.</p>
+                <form class="newsletter-form" id="newsletter-form">
+                    <input type="email" placeholder="Insira o seu e-mail corporativo" class="newsletter-input" required>
+                    <button type="submit" class="btn-primary" style="padding: 12px 24px;">Inscrever-se</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-desc">
+                <a href="#" class="logo" style="margin-bottom: 15px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-cyber)" stroke-width="2"><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
+                    AgroSat<span>Monitor</span>
+                </a>
+                <p>Monitoramento agrícola avançado e análise multiespectral baseada em dados espaciais orbitais integrados na nuvem.</p>
+            </div>
+
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="#inicio">Início</a></li>
+                    <li><a href="#metricas">Métricas</a></li>
+                    <li><a href="#dashboard">Dashboard</a></li>
+                    <li><a href="#tecnologia">Espaço</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Privacidade</a></li>
+                    <li><a href="#">Política de Dados</a></li>
+                    <li><a href="#">Compliance</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Parceiros</h4>
+                <ul>
+                    <li><a href="#">Copernicus Open Access</a></li>
+                    <li><a href="#">Microsoft Azure Space</a></li>
+                    <li><a href="#">SpaceX Starshield</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="container footer-bottom">
+            <div>© 2026 AgroSat Monitor Inc. Todos os direitos reservados.</div>
+            <div class="footer-bottom-mock">
+                Página mockada desenvolvida exclusivamente para a simulação da solução.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notificação Customizada (Alternativa para alert) -->
+    <div class="notification-toast" id="notification-toast">
+        E-mail cadastrado com sucesso na base orbital!
+    </div>
+
+    <!-- SCRIPTS JAVASCRIPT -->
+    <script>
+        /* =========================================================================
+           BACKGROUND ESPACIAL DE CANVAS INTERATIVO
+           ========================================================================= */
+        const canvas = document.getElementById('space-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        const numStars = 100;
+        let mouse = { x: null, y: null, radius: 150 };
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.8 + 0.2,
+                    speedX: (Math.random() - 0.5) * 0.15,
+                    speedY: (Math.random() - 0.5) * 0.15,
+                    pulseSpeed: Math.random() * 0.02 + 0.005,
+                    pulseDirection: Math.random() > 0.5 ? 1 : -1,
+                    alpha: Math.random()
+                });
+            }
+        }
+
+        window.addEventListener('resize', initCanvas);
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        window.addEventListener('mouseout', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Fundo escuro sutil espacial gradiente
+            let gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 10, canvas.width/2, canvas.height/2, canvas.width);
+            gradient.addColorStop(0, '#040d21');
+            gradient.addColorStop(1, '#020617');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            stars.forEach(star => {
+                // Movimento sutil
+                star.x += star.speedX;
+                star.y += star.speedY;
+
+                // Reposicionar se sair da tela
+                if (star.x < 0) star.x = canvas.width;
+                if (star.x > canvas.width) star.x = 0;
+                if (star.y < 0) star.y = canvas.height;
+                if (star.y > canvas.height) star.y = 0;
+
+                // Brilho pulsante
+                star.alpha += star.pulseSpeed * star.pulseDirection;
+                if (star.alpha > 1 || star.alpha < 0.2) {
+                    star.pulseDirection *= -1;
+                }
+
+                // Desenhar Estrela
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 240, 255, ${star.alpha})`;
+                ctx.shadowBlur = star.size * 2;
+                ctx.shadowColor = 'var(--color-cyber)';
+                ctx.fill();
+                ctx.shadowBlur = 0; // Reset
+
+                // Desenhar linhas de conexão com estrelas próximas e o mouse
+                if (mouse.x !== null && mouse.y !== null) {
+                    let dx = star.x - mouse.x;
+                    let dy = star.y - mouse.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < mouse.radius) {
+                        ctx.beginPath();
+                        ctx.moveTo(star.x, star.y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.strokeStyle = `rgba(0, 240, 255, ${1 - (distance / mouse.radius) * 0.85})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            requestAnimationFrame(animateStars);
+        }
+
+        initCanvas();
+        animateStars();
+
+        /* =========================================================================
+           SIMULAÇÃO DE MÉTRICAS DINÂMICAS (Efeito "Live Data")
+           ========================================================================= */
+        function simulateMetrics() {
+            // NDVI oscila levemente ao redor do valor padrão (0.78)
+            const ndvi = document.getElementById('val-ndvi');
+            let valNdvi = parseFloat(ndvi.innerText);
+            valNdvi += (Math.random() - 0.5) * 0.01;
+            ndvi.innerText = Math.max(0.1, Math.min(0.99, valNdvi)).toFixed(2);
+
+            // Umidade oscila (42.1)
+            const moisture = document.getElementById('val-moisture');
+            let valMoisture = parseFloat(moisture.innerText);
+            valMoisture += (Math.random() - 0.5) * 0.2;
+            moisture.innerText = Math.max(10, Math.min(100, valMoisture)).toFixed(1);
+
+            // Temperatura oscila (24.8)
+            const temp = document.getElementById('val-temp');
+            let valTemp = parseFloat(temp.innerText);
+            valTemp += (Math.random() - 0.5) * 0.1;
+            temp.innerText = valTemp.toFixed(1);
+
+            // Cobertura Vegetal oscila muito sutilmente (89.4)
+            const fcover = document.getElementById('val-fcover');
+            let valFcover = parseFloat(fcover.innerText);
+            valFcover += (Math.random() - 0.5) * 0.05;
+            fcover.innerText = Math.max(0, Math.min(100, valFcover)).toFixed(1);
+        }
+        setInterval(simulateMetrics, 3000);
+
+        /* =========================================================================
+           DASHBOARD - GRÁFICOS (CHART.JS)
+           ========================================================================= */
+        const ctxChart = document.getElementById('ndviMoistureChart').getContext('2d');
+        
+        // Dados de Simulação para as regiões (Talhões)
+        const datasets = {
+            'talhao-alfa': {
+                labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+                ndvi: [0.65, 0.70, 0.75, 0.78, 0.81, 0.78],
+                moisture: [38, 40, 45, 42, 43, 42]
+            },
+            'talhao-beta': {
+                labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+                ndvi: [0.55, 0.58, 0.62, 0.60, 0.59, 0.63],
+                moisture: [30, 32, 28, 27, 29, 31]
+            }
+        };
+
+        let activeDataset = 'talhao-alfa';
+
+        const configChart = {
+            type: 'line',
+            data: {
+                labels: datasets[activeDataset].labels,
+                datasets: [
+                    {
+                        label: 'Índice NDVI',
+                        data: datasets[activeDataset].ndvi,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        yAxisID: 'y',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Umidade do Solo (%)',
+                        data: datasets[activeDataset].moisture,
+                        borderColor: '#0078d4',
+                        backgroundColor: 'rgba(0, 120, 212, 0.05)',
+                        borderWidth: 2,
+                        yAxisID: 'y1',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#9ca3af',
+                            font: { family: 'Inter', size: 12 }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#9ca3af', font: { family: 'Rajdhani' } }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#10b981' },
+                        min: 0,
+                        max: 1
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#0078d4' },
+                        min: 0,
+                        max: 100
+                    }
+                }
+            }
+        };
+
+        const telemetryChart = new Chart(ctxChart, configChart);
+
+        function updateDataset(key) {
+            // Troca o botão ativo visualmente
+            const buttons = document.querySelectorAll('.db-btn');
+            buttons.forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(key.split('-')[1])) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Atualiza dados
+            telemetryChart.data.datasets[0].data = datasets[key].ndvi;
+            telemetryChart.data.datasets[1].data = datasets[key].moisture;
+            telemetryChart.update();
+        }
+
+        /* =========================================================================
+           CARROSSEL DA EQUIPE TÉCNICA (NATIVO E ROBUSTO COM SCROLL-SNAP + SMOOTH JS)
+           ========================================================================= */
+        const container = document.getElementById('carousel-container');
+        const prevBtn = document.getElementById('carousel-btn-prev');
+        const nextBtn = document.getElementById('carousel-btn-next');
+        let isAnimating = false; // Bloqueia cliques excessivos simultâneos
+
+        function updateButtons() {
+            const scrollLeft = container.scrollLeft;
+            const maxScrollLeft = container.scrollWidth - container.clientWidth;
+            
+            // Margem de tolerância para resoluções subpixel
+            prevBtn.style.opacity = scrollLeft <= 5 ? '0.3' : '1';
+            prevBtn.style.pointerEvents = scrollLeft <= 5 ? 'none' : 'auto';
+            
+            nextBtn.style.opacity = scrollLeft >= maxScrollLeft - 5 ? '0.3' : '1';
+            nextBtn.style.pointerEvents = scrollLeft >= maxScrollLeft - 5 ? 'none' : 'auto';
+        }
+
+        // Função de transição suave artificial de altíssima fidelidade para evitar atritos de renderização com o scroll-snap
+        function smoothScrollTo(target) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // 1. Remove temporariamente o snap para que o navegador não "trave" a animação matemática do JS
+            container.style.scrollSnapType = 'none';
+
+            const start = container.scrollLeft;
+            const change = target - start;
+            const startTime = performance.now();
+            const duration = 450; // Tempo em ms (Equilíbrio perfeito de velocidade e elegância)
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Interpolação Ease-In-Out Cubic para aceleração e desaceleração cinematográfica
+                const ease = progress < 0.5 
+                    ? 4 * progress * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+                container.scrollLeft = start + change * ease;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // 2. Restaura o snap original para manter suporte a gestos de toque (swipe)
+                    container.style.scrollSnapType = 'x mandatory';
+                    isAnimating = false;
+                    updateButtons();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        nextBtn.addEventListener('click', () => {
+            const slide = container.querySelector('.team-slide');
+            const slideWidth = slide.getBoundingClientRect().width;
+            const gap = 20; 
+            const maxScrollLeft = container.scrollWidth - container.clientWidth;
+            const target = Math.min(container.scrollLeft + slideWidth + gap, maxScrollLeft);
+            
+            smoothScrollTo(target);
+        });
+
+        prevBtn.addEventListener('click', () => {
+            const slide = container.querySelector('.team-slide');
+            const slideWidth = slide.getBoundingClientRect().width;
+            const gap = 20;
+            const target = Math.max(container.scrollLeft - (slideWidth + gap), 0);
+            
+            smoothScrollTo(target);
+        });
+
+        // Atualizar estado dos botões de controle
+        container.addEventListener('scroll', updateButtons);
+        window.addEventListener('resize', updateButtons);
+        
+        setTimeout(updateButtons, 200);
+
+        /* =========================================================================
+           MENU MOBILE INTERATIVO & SCROLL SPY
+           ========================================================================= */
+        const menuToggle = document.getElementById('menu-toggle');
+        const navMenu = document.getElementById('nav-menu');
+
+        menuToggle.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            menuToggle.innerText = navMenu.classList.contains('active') ? '✕' : '☰';
+        });
+
+        // Fechar menu mobile ao clicar em um link
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                menuToggle.innerText = '☰';
+            });
+        });
+
+        // Mudança dinâmica de classe ativa do menu com base no Scroll da página
+        const sections = document.querySelectorAll('section');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= (sectionTop - 150)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        /* =========================================================================
+           AÇÕES DE FORMULÁRIO (E-MAIL NEWSLETTER)
+           ========================================================================= */
+        const newsletterForm = document.getElementById('newsletter-form');
+        const toast = document.getElementById('notification-toast');
+
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Simular cadastro e exibir Toast Customizado sem utilizar alert()
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 4000);
+
+            newsletterForm.reset();
+        });
+    </script>
 </body>
 </html>
